@@ -1,8 +1,10 @@
 package org.one2n.service
 
+import io.micronaut.http.exceptions.HttpStatusException
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import org.one2n.util.StudentTestData
+import java.util.UUID
 
 class StudentServiceTest {
 
@@ -25,5 +27,25 @@ class StudentServiceTest {
         assertEquals("Alice", student.name)
         assertEquals(20, student.age)
         assertEquals("alice@test.com", student.email)
+    }
+
+    @Test
+    fun `should return student by id`() {
+        val request = StudentTestData.studentRequest()
+        val createdStudent = studentService.createStudent(request)
+
+        val fetchedStudent = studentService.getStudentById(createdStudent.id)
+
+        assertEquals(createdStudent.id, fetchedStudent.id)
+        assertEquals("Alice", fetchedStudent.name)
+    }
+
+    @Test
+    fun `should throw exception when student not found`() {
+        val id = UUID.randomUUID()
+
+        assertThrows(HttpStatusException::class.java) {
+            studentService.getStudentById(id)
+        }
     }
 }
