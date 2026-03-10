@@ -30,6 +30,10 @@ class StudentService {
     }
 
     fun getStudentById(id: UUID): StudentResponse {
+        return findStudentOrThrow(id)
+    }
+
+    private fun findStudentOrThrow(id: UUID): StudentResponse {
         return students.find { it.id == id }
             ?: throw HttpStatusException(HttpStatus.NOT_FOUND, "Student not found")
     }
