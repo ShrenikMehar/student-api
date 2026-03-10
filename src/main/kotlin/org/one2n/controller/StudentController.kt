@@ -1,6 +1,12 @@
 package org.one2n.controller
 
-import io.micronaut.http.annotation.*
+import io.micronaut.http.annotation.Body
+import io.micronaut.http.annotation.Controller
+import io.micronaut.http.annotation.Delete
+import io.micronaut.http.annotation.Get
+import io.micronaut.http.annotation.PathVariable
+import io.micronaut.http.annotation.Post
+import io.micronaut.http.annotation.Put
 import org.one2n.dto.StudentRequest
 import org.one2n.dto.StudentResponse
 import org.one2n.service.StudentService

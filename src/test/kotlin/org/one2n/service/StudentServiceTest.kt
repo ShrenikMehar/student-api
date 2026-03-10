@@ -1,8 +1,11 @@
 package org.one2n.service
 
 import io.micronaut.http.exceptions.HttpStatusException
-import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertThrows
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertNotNull
 import org.one2n.util.StudentTestData
 import java.util.UUID
 

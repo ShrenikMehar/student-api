@@ -5,6 +5,7 @@ plugins {
     id("io.micronaut.application") version "4.6.2"
     id("com.gradleup.shadow") version "8.3.9"
     id("io.micronaut.aot") version "4.6.2"
+    id("io.gitlab.arturbosch.detekt") version "1.23.7"
 }
 
 version = "0.1"
@@ -68,4 +69,13 @@ tasks.named<io.micronaut.gradle.docker.NativeImageDockerfile>("dockerfileNative"
     jdkVersion = "21"
 }
 
+detekt {
+    toolVersion = "1.23.7"
+    buildUponDefaultConfig = true
+    allRules = false
+    config.setFrom(files("$rootDir/detekt.yml"))
+}
 
+tasks.named("check") {
+    dependsOn("detekt")
+}
