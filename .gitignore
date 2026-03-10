@@ -1,0 +1,29 @@
+# OS files
+.DS_Store
+Thumbs.db
+
+# Gradle
+.gradle/
+build/
+out/
+
+# Micronaut
+.micronaut/
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Java / Kotlin
+*.class
+
+# Environment
+.env
+
+# Native libraries (macOS)
+*.dylib
+
+# Logs
+*.log
