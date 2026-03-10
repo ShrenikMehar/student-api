@@ -1,4 +1,4 @@
-package com.shrenik.studentmanagement.controller
+package org.one2n.controller
 
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
