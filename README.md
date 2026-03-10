@@ -69,16 +69,12 @@ A database layer will be introduced in a later milestone.
 
 ## Code Quality
 
-This project enforces code quality using the following tools:
-
 ### Static Analysis
 
 Detekt is used for Kotlin static analysis.
 
-Run manually:
-
 ```
-./gradlew detekt
+make lint
 ```
 
 ---
@@ -90,22 +86,20 @@ ktlint automatically enforces Kotlin code formatting.
 Check formatting:
 
 ```
-./gradlew ktlintCheck
+make lint
 ```
 
 Automatically fix formatting:
 
 ```
-./gradlew ktlintFormat
+make format
 ```
 
 ---
 
 ## Git Hooks
 
-Local Git hooks are used to ensure code quality before commits and pushes.
-
-Hooks perform the following checks:
+Local Git hooks ensure code quality before commits and pushes.
 
 ### Pre-commit
 
@@ -116,7 +110,7 @@ Hooks perform the following checks:
 
 * Run unit tests
 
-To install hooks after cloning the repository:
+Install hooks after cloning the repository:
 
 ```
 ./scripts/setup-git-hooks.sh
@@ -151,7 +145,7 @@ Check your installed version:
 java -version
 ```
 
-Example expected output:
+Expected output example:
 
 ```
 openjdk version "21.x"
@@ -175,32 +169,38 @@ git --version
 
 No manual installation is required.
 
-The project uses the **Gradle Wrapper**, so all build commands can be executed using:
-
-```
-./gradlew <task>
-```
+The project uses the **Gradle Wrapper**, so all build commands are executed through Gradle automatically.
 
 ---
 
 ## Running the Application
 
-Run the service locally:
+Start the API locally:
 
 ```
-./gradlew run
+make run
 ```
 
-The API will start on the default Micronaut port.
+The service will start on the default Micronaut port (`http://localhost:8080`).
 
 ---
 
 ## Running Tests
 
-Execute the test suite using:
+Run the test suite:
 
 ```
-./gradlew test
+make test
+```
+
+---
+
+## Build
+
+Build the project:
+
+```
+make build
 ```
 
 ---
@@ -221,7 +221,7 @@ postman/student-api.postman_collection.json
 2. Click **Import**
 3. Select the file above
 
-Make sure the application is running locally (`http://localhost:8080`) before sending requests.
+Ensure the application is running (`http://localhost:8080`) before sending requests.
 
 ---
 
@@ -232,6 +232,7 @@ src/main/kotlin    → application source code
 src/test/kotlin    → unit tests
 .githooks          → git hooks (pre-commit, pre-push)
 scripts            → developer setup scripts
+postman            → API testing collection
 ```
 
 ---
@@ -245,7 +246,6 @@ The following features will be added in future milestones:
 * Repository layer
 * environment based configuration
 * OpenAPI / Swagger documentation
-* Makefile for common development tasks
 * API request validation
 * pagination support
 * Docker support
