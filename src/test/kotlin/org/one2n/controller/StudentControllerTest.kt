@@ -103,4 +103,19 @@ class StudentControllerTest {
         assertEquals("Bob", updatedStudent.name)
         assertEquals(25, updatedStudent.age)
     }
+
+    @Test
+    fun `should return 404 when updating non existing student`() {
+        val id = UUID.randomUUID()
+
+        val requestBody = StudentTestData.studentRequest(
+            name = "Bob",
+            age = 25
+        )
+        val request = HttpRequest.PUT("/api/v1/students/$id", requestBody)
+
+        assertThrows(HttpClientResponseException::class.java) {
+            client.toBlocking().retrieve(request)
+        }
+    }
 }

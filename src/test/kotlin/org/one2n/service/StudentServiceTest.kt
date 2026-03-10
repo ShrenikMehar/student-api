@@ -65,4 +65,18 @@ class StudentServiceTest {
         assertEquals("Bob", updatedStudent.name)
         assertEquals(25, updatedStudent.age)
     }
+
+    @Test
+    fun `should throw exception when updating non existing student`() {
+        val id = UUID.randomUUID()
+
+        val request = StudentTestData.studentRequest(
+            name = "Bob",
+            age = 25
+        )
+
+        assertThrows(HttpStatusException::class.java) {
+            studentService.updateStudent(id, request)
+        }
+    }
 }
