@@ -8,8 +8,10 @@ import io.micronaut.test.extensions.junit5.annotation.MicronautTest
 import jakarta.inject.Inject
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.one2n.dto.StudentResponse
+import org.one2n.service.StudentService
 import org.one2n.util.StudentTestData
 import java.util.UUID
 
@@ -19,6 +21,16 @@ class StudentControllerTest {
     @Inject
     @field:Client("/")
     lateinit var client: HttpClient
+
+    @Inject
+    lateinit var studentService: StudentService
+
+    @BeforeEach
+    fun resetService() {
+        val field = StudentService::class.java.getDeclaredField("students")
+        field.isAccessible = true
+        (field.get(studentService) as MutableList<*>).clear()
+    }
 
     @Test
     fun `should return empty student list`() {
