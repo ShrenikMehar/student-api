@@ -34,7 +34,9 @@ application {
     mainClass = "org.one2n.ApplicationKt"
 }
 java {
-    sourceCompatibility = JavaVersion.toVersion("25")
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(21))
+    }
 }
 
 
@@ -63,7 +65,7 @@ micronaut {
 
 
 tasks.named<io.micronaut.gradle.docker.NativeImageDockerfile>("dockerfileNative") {
-    jdkVersion = "25"
+    jdkVersion = "21"
 }
 
 
