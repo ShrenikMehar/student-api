@@ -3,16 +3,26 @@ package org.one2n.controller
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
+import io.micronaut.runtime.EmbeddedApplication
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest
 import jakarta.inject.Inject
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 @MicronautTest(environments = ["test"])
 class HealthControllerTest {
     @Inject
+    lateinit var application: EmbeddedApplication<*>
+
+    @Inject
     @field:Client("/")
     lateinit var client: HttpClient
+
+    @Test
+    fun testItWorks() {
+        Assertions.assertTrue(application.isRunning)
+    }
 
     @Test
     fun `healthcheck endpoint returns ok`() {
