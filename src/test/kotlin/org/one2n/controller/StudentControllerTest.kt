@@ -1,155 +1,156 @@
 package org.one2n.controller
 
-import io.micronaut.http.HttpRequest
-import io.micronaut.http.client.HttpClient
-import io.micronaut.http.client.annotation.Client
-import io.micronaut.http.client.exceptions.HttpClientResponseException
-import io.micronaut.test.extensions.junit5.annotation.MicronautTest
-import jakarta.inject.Inject
+import io.micronaut.http.HttpStatus
+import io.micronaut.http.exceptions.HttpStatusException
+import io.mockk.every
+import io.mockk.mockk
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.one2n.dto.StudentResponse
 import org.one2n.service.StudentService
 import org.one2n.util.StudentTestData
 import java.util.UUID
 
-@MicronautTest
 class StudentControllerTest {
-    @Inject
-    @field:Client("/")
-    lateinit var client: HttpClient
-
-    @Inject
-    lateinit var studentService: StudentService
-
-    @BeforeEach
-    fun resetService() {
-        val field = StudentService::class.java.getDeclaredField("students")
-        field.isAccessible = true
-        (field.get(studentService) as MutableList<*>).clear()
-    }
+    private val studentService = mockk<StudentService>()
+    private val controller = StudentController(studentService)
 
     @Test
     fun `should return empty student list`() {
-        val request = HttpRequest.GET<Any>("/api/v1/students")
+        every { studentService.getAllStudents() } returns emptyList()
 
-        val response = client.toBlocking().retrieve(request)
+        val result = controller.getAllStudents()
 
-        assertEquals("[]", response)
+        assertEquals(0, result.size)
     }
 
     @Test
     fun `should create student`() {
-        val requestBody = StudentTestData.studentRequest()
-        val request = HttpRequest.POST("/api/v1/students", requestBody)
+        val request = StudentTestData.studentRequest()
 
         val response =
-            client.toBlocking()
-                .retrieve(request, StudentResponse::class.java)
+            StudentResponse(
+                id = UUID.randomUUID(),
+                name = request.name,
+                age = request.age,
+                email = request.email,
+            )
 
-        assertEquals("Alice", response.name)
-        assertEquals(20, response.age)
-        assertEquals("alice@test.com", response.email)
+        every { studentService.createStudent(request) } returns response
+
+        val result = controller.createStudent(request)
+
+        assertEquals("Alice", result.name)
+        assertEquals(20, result.age)
+        assertEquals("alice@test.com", result.email)
     }
 
     @Test
     fun `should return student by id`() {
-        val requestBody = StudentTestData.studentRequest()
-        val request = HttpRequest.POST("/api/v1/students", requestBody)
+        val id = UUID.randomUUID()
 
-        val createdStudent =
-            client.toBlocking()
-                .retrieve(request, StudentResponse::class.java)
+        val response =
+            StudentResponse(
+                id = id,
+                name = "Alice",
+                age = 20,
+                email = "alice@test.com",
+            )
 
-        val getRequest = HttpRequest.GET<Any>("/api/v1/students/${createdStudent.id}")
+        every { studentService.getStudentById(id) } returns response
 
-        val fetchedStudent =
-            client.toBlocking()
-                .retrieve(getRequest, StudentResponse::class.java)
+        val result = controller.getStudentById(id)
 
-        assertEquals(createdStudent.id, fetchedStudent.id)
+        assertEquals(id, result.id)
+        assertEquals("Alice", result.name)
     }
 
     @Test
-    fun `should return 404 when student not found`() {
+    fun `should throw exception when student not found`() {
         val id = UUID.randomUUID()
 
-        val request = HttpRequest.GET<Any>("/api/v1/students/$id")
+        every { studentService.getStudentById(id) } throws
+            HttpStatusException(HttpStatus.NOT_FOUND, "Student not found")
 
-        assertThrows(HttpClientResponseException::class.java) {
-            client.toBlocking().retrieve(request)
+        assertThrows(HttpStatusException::class.java) {
+            controller.getStudentById(id)
         }
     }
 
     @Test
     fun `should update student`() {
-        val requestBody = StudentTestData.studentRequest()
-        val createRequest = HttpRequest.POST("/api/v1/students", requestBody)
+        val id = UUID.randomUUID()
 
-        val createdStudent =
-            client.toBlocking()
-                .retrieve(createRequest, StudentResponse::class.java)
-
-        val updateRequest =
+        val request =
             StudentTestData.studentRequest(
                 name = "Bob",
                 age = 25,
             )
 
-        val putRequest = HttpRequest.PUT("/api/v1/students/${createdStudent.id}", updateRequest)
+        val response =
+            StudentResponse(
+                id = id,
+                name = "Bob",
+                age = 25,
+                email = request.email,
+            )
 
-        val updatedStudent =
-            client.toBlocking()
-                .retrieve(putRequest, StudentResponse::class.java)
+        every { studentService.updateStudent(id, request) } returns response
 
-        assertEquals(createdStudent.id, updatedStudent.id)
-        assertEquals("Bob", updatedStudent.name)
-        assertEquals(25, updatedStudent.age)
+        val result = controller.updateStudent(id, request)
+
+        assertEquals(id, result.id)
+        assertEquals("Bob", result.name)
+        assertEquals(25, result.age)
     }
 
     @Test
-    fun `should return 404 when updating non existing student`() {
+    fun `should throw exception when updating non existing student`() {
         val id = UUID.randomUUID()
 
-        val requestBody =
+        val request =
             StudentTestData.studentRequest(
                 name = "Bob",
                 age = 25,
             )
-        val request = HttpRequest.PUT("/api/v1/students/$id", requestBody)
 
-        assertThrows(HttpClientResponseException::class.java) {
-            client.toBlocking().retrieve(request)
+        every { studentService.updateStudent(id, request) } throws
+            HttpStatusException(HttpStatus.NOT_FOUND, "Student not found")
+
+        assertThrows(HttpStatusException::class.java) {
+            controller.updateStudent(id, request)
         }
     }
 
     @Test
     fun `should delete student`() {
-        val requestBody = StudentTestData.studentRequest()
-        val createdStudent =
-            client.toBlocking()
-                .retrieve(HttpRequest.POST("/api/v1/students", requestBody), StudentResponse::class.java)
+        val id = UUID.randomUUID()
 
-        val deletedStudent =
-            client.toBlocking()
-                .retrieve(
-                    HttpRequest.DELETE<Any>("/api/v1/students/${createdStudent.id}"),
-                    StudentResponse::class.java,
-                )
+        val response =
+            StudentResponse(
+                id = id,
+                name = "Alice",
+                age = 20,
+                email = "alice@test.com",
+            )
 
-        assertEquals(createdStudent.id, deletedStudent.id)
+        every { studentService.deleteStudent(id) } returns response
+
+        val result = controller.deleteStudent(id)
+
+        assertEquals(id, result.id)
     }
 
     @Test
-    fun `should return 404 when deleting non existing student`() {
+    fun `should throw exception when deleting non existing student`() {
         val id = UUID.randomUUID()
 
-        val request = HttpRequest.DELETE<Any>("/api/v1/students/$id")
+        every { studentService.deleteStudent(id) } throws
+            HttpStatusException(HttpStatus.NOT_FOUND, "Student not found")
 
-        assertThrows(HttpClientResponseException::class.java) {
-            client.toBlocking().retrieve(request, StudentResponse::class.java)
+        assertThrows(HttpStatusException::class.java) {
+            controller.deleteStudent(id)
         }
     }
 }

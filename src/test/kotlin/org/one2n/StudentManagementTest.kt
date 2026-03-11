@@ -5,7 +5,7 @@ import jakarta.inject.Inject
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 
-@MicronautTest
+@MicronautTest(environments = ["test"])
 class StudentManagementTest {
     @Inject
     lateinit var application: EmbeddedApplication<*>

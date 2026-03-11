@@ -8,7 +8,7 @@ import jakarta.inject.Inject
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
-@MicronautTest
+@MicronautTest(environments = ["test"])
 class HealthControllerTest {
     @Inject
     @field:Client("/")

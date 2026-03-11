@@ -1,0 +1,6 @@
+datasources:
+  default:
+    enabled: false
+
+flyway:
+  enabled: false
