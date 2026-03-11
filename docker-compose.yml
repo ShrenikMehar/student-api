@@ -11,5 +11,19 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  student-api:
+    image: student-api:1.0.0
+    container_name: student-api
+    depends_on:
+      - postgres
+    ports:
+      - "8080:8080"
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: students
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+
 volumes:
   postgres_data:
