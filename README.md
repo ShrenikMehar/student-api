@@ -5,7 +5,7 @@
 This project implements a simple REST API to manage student records.
 
 The API allows clients to create, retrieve, update, and delete student information.
-The service is implemented using Kotlin and the Micronaut framework and follows common REST API best practices along with principles inspired by the Twelve-Factor App methodology.
+The service is implemented using **Kotlin** and the **Micronaut** framework and follows REST API best practices along with principles inspired by the **Twelve-Factor App methodology**.
 
 The project also demonstrates good backend engineering practices such as:
 
@@ -15,12 +15,13 @@ The project also demonstrates good backend engineering practices such as:
 * structured logging
 * Git hooks for local quality checks
 * database migrations
+* containerized deployment using Docker
 
 ---
 
 ## Features
 
-The API currently supports the following operations:
+The API supports the following operations:
 
 * Add a new student
 * Get all students
@@ -29,7 +30,7 @@ The API currently supports the following operations:
 * Delete a student record
 * Health check endpoint
 
-Student data is persisted in PostgreSQL, and database schema management is handled using Flyway migrations.
+Student data is stored in **PostgreSQL**, and schema management is handled using **Flyway migrations**.
 
 ---
 
@@ -66,12 +67,120 @@ Student data is persisted in PostgreSQL, and database schema management is handl
 * **Linting:** Detekt
 * **Formatting:** ktlint
 * **CI:** GitHub Actions
+* **Containerization:** Docker
+
+---
+
+## Docker Image Optimization
+
+Different runtime base images were evaluated to reduce container size.
+
+| Base Image                    | Image Size |
+| ----------------------------- | ---------- |
+| eclipse-temurin:21-jre        | ~473 MB    |
+| eclipse-temurin:21-jre-jammy  | ~438 MB    |
+| eclipse-temurin:21-jre-alpine | ~333 MB    |
+| distroless/java21             | ~318 MB    |
+
+The project uses:
+
+```
+eclipse-temurin:21-jre-alpine
+```
+
+This provides a good balance between **smaller image size**, **JVM compatibility**, and **ease of debugging** compared to minimal distroless images.
+
+---
+
+## Quick Start (Docker)
+
+The easiest way to run the application is using Docker.
+This starts both the **API** and the **PostgreSQL database**.
+
+### Build the Docker image
+
+```
+make build
+```
+
+### Start the application
+
+```
+make run
+```
+
+This starts:
+
+* PostgreSQL database
+* Student REST API
+
+The API will be available at:
+
+```
+http://localhost:8080
+```
+
+Health check endpoint:
+
+```
+http://localhost:8080/healthcheck
+```
+
+### Stop the application
+
+```
+make stop
+```
+
+### View logs
+
+```
+make logs
+```
+
+---
+
+## Local Development (Optional)
+
+If you want to run the API directly without Docker.
+
+### Start PostgreSQL
+
+```
+make db-up
+```
+
+### Run the API locally
+
+```
+make local-run
+```
+
+The API will start at:
+
+```
+http://localhost:8080
+```
+
+### Stop PostgreSQL
+
+```
+make db-down
+```
+
+---
+
+## Running Tests
+
+```
+make local-test
+```
 
 ---
 
 ## Code Quality
 
-### Static Analysis
+### Linting
 
 Detekt is used for Kotlin static analysis.
 
@@ -79,19 +188,9 @@ Detekt is used for Kotlin static analysis.
 make lint
 ```
 
----
-
-### Code Formatting
+### Formatting
 
 ktlint automatically enforces Kotlin code formatting.
-
-Check formatting:
-
-```
-make lint
-```
-
-Automatically fix formatting:
 
 ```
 make format
@@ -105,12 +204,12 @@ Local Git hooks ensure code quality before commits and pushes.
 
 ### Pre-commit
 
-* Run ktlint formatter
-* Run detekt lint checks
+* run ktlint formatter
+* run detekt lint checks
 
 ### Pre-push
 
-* Run unit tests
+* run unit tests
 
 Install hooks after cloning the repository:
 
@@ -122,7 +221,7 @@ Install hooks after cloning the repository:
 
 ## Continuous Integration
 
-A CI pipeline is configured using GitHub Actions.
+A CI pipeline is configured using **GitHub Actions**.
 
 Every push and pull request automatically runs:
 
@@ -135,106 +234,31 @@ Every push and pull request automatically runs:
 
 ## Prerequisites
 
-The following tools must be installed before running the project locally.
+### Docker
 
-### Java
+Docker is required to run the application.
 
-This project requires **Java 21**.
+Check installation:
 
-Check your installed version:
+```
+docker --version
+```
+
+### Java (Optional)
+
+Java is only required if running the application **locally without Docker**.
+
+The project uses **Java 21**.
 
 ```
 java -version
-```
-
-Expected output example:
-
-```
-openjdk version "21.x"
-```
-
-The Gradle build is configured to use the **Java 21 toolchain**.
-
----
-
-### Docker
-
-PostgreSQL is run using Docker via the provided `docker-compose.yml`.
-
-Start the database:
-
-```bash
-make db-up
-```
-
-Stop the database:
-
-```bash
-make db-down
-```
-
-Alternatively you can run Docker commands directly:
-
-```bash
-docker compose up -d
-docker compose down
-```
-
----
-
-### Git
-
-Git is required to clone the repository and enable Git hooks.
-
-```
-git --version
-```
-
----
-
-### Gradle
-
-No manual installation is required.
-
-The project uses the **Gradle Wrapper**, so all build commands are executed through Gradle automatically.
-
----
-
-## Running the Application
-
-Start the API locally:
-
-```
-make run
-```
-
-The service will start on the default Micronaut port (`http://localhost:8080`). Make sure the PostgreSQL database is running before starting the application.
-
----
-
-## Running Tests
-
-Run the test suite:
-
-```
-make test
-```
-
----
-
-## Build
-
-Build the project:
-
-```
-make build
 ```
 
 ---
 
 ## Postman Collection
 
-A Postman collection is included to test the API.
+A Postman collection is included for testing the API.
 
 Location:
 
@@ -242,13 +266,13 @@ Location:
 postman/student-api.postman_collection.json
 ```
 
-### Import
+### Import Steps
 
 1. Open Postman
 2. Click **Import**
-3. Select the file above
+3. Select the collection file
 
-Ensure the application is running (`http://localhost:8080`) before sending requests.
+Ensure the API is running (`http://localhost:8080`) before sending requests.
 
 ---
 
@@ -280,4 +304,5 @@ Possible enhancements for future iterations:
 
 * API request validation
 * pagination support
-* Dockerized application deployment
+* API documentation (OpenAPI / Swagger)
+* container registry publishing
