@@ -234,6 +234,16 @@ Every push and pull request automatically runs:
 
 ## Prerequisites
 
+The easiest way to verify your development environment is to run:
+
+```
+./scripts/setup-prerequisites.sh
+```
+
+This script checks if all required tools are installed.
+
+### Required Tools
+
 ### Docker
 
 Docker is required to run the application.
@@ -242,6 +252,14 @@ Check installation:
 
 ```
 docker --version
+```
+
+### Make
+
+The project uses a Makefile to simplify common commands.
+
+```
+make --version
 ```
 
 ### Java (Optional)
