@@ -3,7 +3,10 @@ FROM gradle:8.7-jdk21 AS builder
 
 WORKDIR /app
 
-COPY . .
+COPY build.gradle.kts settings.gradle.kts gradle.properties ./
+COPY gradle ./gradle
+
+COPY src ./src
 
 RUN gradle shadowJar -x test --no-daemon
 
