@@ -1,4 +1,5 @@
-.PHONY: build run stop logs db-up db-down local-build local-run local-test lint format
+.PHONY: build run stop logs db-up db-down local-build local-run local-test lint format \
+        k8s-up k8s-run k8s-stop k8s-start k8s-down
 
 IMAGE_NAME=student-api
 VERSION ?= 1.0.0
@@ -43,3 +44,41 @@ lint:
 
 format:
 	./gradlew ktlintFormat
+
+
+# ---- Kubernetes helpers ----
+
+k8s-up:
+	# After this completes run and all pods are running: make k8s-run to get the API url
+	minikube start --nodes 4 --driver=docker
+	kubectl label node minikube-m02 type=application
+	kubectl label node minikube-m03 type=database
+	kubectl label node minikube-m04 type=dependent_services
+	kubectl create namespace student-api
+	kubectl create namespace vault
+	kubectl create namespace external-secrets
+	helm repo add hashicorp https://helm.releases.hashicorp.com
+	helm repo add external-secrets https://charts.external-secrets.io
+	helm repo update
+	helm dependency build infra/helm/vault
+	helm dependency build infra/helm/external-secrets
+	helm install vault infra/helm/vault --namespace vault
+	kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=vault -n vault --timeout=300s
+	kubectl exec -it vault-0 -n vault -- vault login root
+	kubectl exec -it vault-0 -n vault -- vault kv put secret/student-api/db username=postgres password=postgres
+	helm install external-secrets infra/helm/external-secrets --namespace external-secrets
+	kubectl wait --for=condition=ready pod -l 'app.kubernetes.io/instance=external-secrets' -n external-secrets --timeout=300s
+	helm install postgres infra/helm/postgres --namespace student-api
+	helm install student-api infra/helm/student-api --namespace student-api
+
+k8s-run:
+	minikube service student-api -n student-api --url
+
+k8s-stop:
+	minikube stop
+
+k8s-start:
+	minikube start
+
+k8s-down:
+	minikube delete
