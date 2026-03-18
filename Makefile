@@ -1,6 +1,9 @@
 .PHONY: build run stop logs db-up db-down local-build local-run local-test lint format \
         k8s-up k8s-run k8s-stop k8s-start k8s-down
 
+-include .env
+export
+
 IMAGE_NAME=student-api
 VERSION ?= 1.0.0
 
@@ -49,7 +52,7 @@ format:
 # ---- Kubernetes helpers ----
 
 k8s-up:
-	# After this completes run and all pods are running: make k8s-run to get the API url
+	# After this completes and all pods are running, run: make k8s-run to get the API url
 	minikube start --nodes 4 --driver=docker
 	kubectl label node minikube-m02 type=application
 	kubectl label node minikube-m03 type=database
@@ -64,12 +67,22 @@ k8s-up:
 	helm dependency build infra/helm/external-secrets
 	helm install vault infra/helm/vault --namespace vault
 	kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=vault -n vault --timeout=300s
-	kubectl exec -it vault-0 -n vault -- vault login root
-	kubectl exec -it vault-0 -n vault -- vault kv put secret/student-api/db username=postgres password=postgres
+	kubectl exec -it vault-0 -n vault -- vault login $(VAULT_TOKEN)
+	kubectl exec -it vault-0 -n vault -- vault kv put secret/student-api/db username=$(DB_USER) password=$(DB_PASSWORD)
 	helm install external-secrets infra/helm/external-secrets --namespace external-secrets
 	kubectl wait --for=condition=ready pod -l 'app.kubernetes.io/instance=external-secrets' -n external-secrets --timeout=300s
-	helm install postgres infra/helm/postgres --namespace student-api
-	helm install student-api infra/helm/student-api --namespace student-api
+	helm install postgres infra/helm/postgres \
+    		--namespace student-api \
+    		--set auth.username=$(DB_USER) \
+    		--set auth.password=$(DB_PASSWORD) \
+    		--set auth.database=$(DB_NAME)
+	helm install student-api infra/helm/student-api \
+		--namespace student-api \
+		--set config.dbHost=$(DB_HOST) \
+		--set config.dbPort=$(DB_PORT) \
+		--set config.dbName=$(DB_NAME) \
+		--set secret.dbUser=$(DB_USER) \
+		--set secret.dbPassword=$(DB_PASSWORD)
 
 k8s-run:
 	minikube service student-api -n student-api --url
