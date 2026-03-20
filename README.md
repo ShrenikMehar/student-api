@@ -16,6 +16,7 @@ The service is built using **Kotlin** and the **Micronaut** framework and follow
 * Kubernetes orchestration using Minikube
 * Helm charts for deployment management
 * Secrets management using Vault and External Secrets Operator
+* GitOps-based deployments using ArgoCD
 
 Student data is stored in **PostgreSQL**.
 
@@ -72,6 +73,7 @@ The API supports:
 * **Container Orchestration:** Kubernetes (Minikube)
 * **Deployment Management:** Helm
 * **Secrets Management:** Hashicorp Vault + External Secrets Operator
+* **GitOps:** ArgoCD
 
 ---
 
@@ -101,7 +103,10 @@ java -version
 brew install kubectl
 brew install minikube
 brew install helm
+brew install gettext
 ```
+
+`gettext` provides `envsubst` which is required for applying ArgoCD manifests with environment variable substitution.
 
 Verify installation:
 
@@ -109,6 +114,21 @@ Verify installation:
 kubectl version --client
 minikube version
 helm version
+envsubst --version
+```
+
+### Colima Resource Requirements
+
+This project runs a 4-node Minikube cluster with multiple services. Colima must be configured with sufficient resources:
+
+```
+colima start --cpu 4 --memory 8
+```
+
+Verify:
+
+```
+docker info | grep -E "CPUs|Memory"
 ```
 
 ---
@@ -345,9 +365,9 @@ vagrant destroy
 
 ---
 
-# Deployment Using Kubernetes and Helm
+# Deployment Using Kubernetes, Helm and ArgoCD
 
-The project can be deployed on a local Kubernetes cluster using Minikube and Helm.
+The project can be deployed on a local Kubernetes cluster using Minikube, Helm, and ArgoCD.
 
 ## Architecture
 
@@ -362,23 +382,71 @@ Student API pods (minikube-m02)
    │
    ▼
 PostgreSQL pod (minikube-m03)
+
+Vault + ESO + ArgoCD (minikube-m04)
    │
-   ▼
-Vault + ESO (minikube-m04)
-   │
-   ▼
-Injects DB credentials as K8s Secrets
+   ├── Vault → stores DB credentials
+   ├── ESO → injects credentials as K8s Secrets
+   └── ArgoCD → watches Git and syncs deployments
 ```
 
 ## Infrastructure Layout
 
 ```
 infra/
- └── helm/
-     ├── student-api/       → custom chart for the API
-     ├── postgres/          → custom chart for PostgreSQL
-     ├── vault/             → Hashicorp Vault chart
-     └── external-secrets/  → External Secrets Operator chart
+ ├── helm/
+ │   ├── student-api/       → custom chart for the API
+ │   ├── postgres/          → custom chart for PostgreSQL
+ │   ├── vault/             → Hashicorp Vault chart
+ │   ├── external-secrets/  → External Secrets Operator chart
+ │   └── argocd/            → ArgoCD chart
+ └── argocd/
+     ├── repository-secret.yaml  → GitHub repo access for ArgoCD
+     └── applications/
+         ├── student-api.yaml    → ArgoCD app for student API
+         └── postgres.yaml       → ArgoCD app for PostgreSQL
+```
+
+---
+
+## Prerequisites
+
+### GitHub Actions Secrets
+
+Add the following secrets to your GitHub repository:
+
+```
+GitHub repo → Settings → Secrets and variables → Actions → New repository secret
+```
+
+Required secrets:
+
+| Secret | Description |
+| ------ | ----------- |
+| DOCKER_USERNAME | DockerHub username |
+| DOCKER_PASSWORD | DockerHub password |
+| GITHUB_USERNAME | GitHub username for ArgoCD repo access |
+| GITHUB_TOKEN | GitHub Personal Access Token with repo scope |
+
+### Environment File
+
+Copy `.env.example` to `.env` and fill in the values:
+
+```
+cp .env.example .env
+```
+
+Required values:
+
+```
+DB_HOST=postgres
+DB_PORT=5432
+DB_NAME=students
+DB_USER=postgres
+DB_PASSWORD=postgres
+VAULT_TOKEN=root
+GITHUB_USERNAME=your_github_username
+GITHUB_TOKEN=your_github_pat
 ```
 
 ---
@@ -386,16 +454,18 @@ infra/
 ## Start the Cluster
 
 ```
-make k8s-up
+source .env && make k8s-up
 ```
 
 This will:
 
 * Start Minikube with 4 nodes
-* Label nodes by role
+* Label nodes by role (application, database, dependent_services)
 * Add required Helm repositories
-* Deploy Vault, ESO, PostgreSQL, and the Student API
+* Deploy Vault, ESO, PostgreSQL, Student API, and ArgoCD
 * Store DB credentials in Vault
+* Apply ArgoCD repository secret and application manifests
+* ArgoCD will automatically sync and manage deployments
 
 ---
 
@@ -413,6 +483,31 @@ http://127.0.0.1:<port>/healthcheck
 
 ---
 
+## Access the ArgoCD UI
+
+Get the ArgoCD UI URL:
+
+```
+make k8s-argocd-ui
+```
+
+Get the initial admin password:
+
+```
+make k8s-argocd-password
+```
+
+Login credentials:
+
+```
+username: admin
+password: <output from above command>
+```
+
+Keep the terminal running `k8s-argocd-ui` open and open the URL in your browser.
+
+---
+
 ## Pause and Resume
 
 Pause the cluster without losing any data or configuration:
@@ -427,6 +522,13 @@ Resume:
 make k8s-start
 ```
 
+After resuming, re-expose the services by running:
+
+```
+make k8s-run
+make k8s-argocd-ui
+```
+
 ---
 
 ## Full Teardown
@@ -439,17 +541,6 @@ This deletes the entire Minikube cluster and all resources.
 
 ---
 
-## Upgrade a Helm Release
-
-If you make changes to a chart:
-
-```
-helm upgrade student-api infra/helm/student-api --namespace student-api
-helm upgrade postgres infra/helm/postgres --namespace student-api
-```
-
----
-
 # Tested Environment
 
 The infrastructure setup has been tested on:
@@ -457,11 +548,13 @@ The infrastructure setup has been tested on:
 ```
 MacBook (Apple Silicon M4)
 macOS
+Colima (4 CPU, 8GB RAM)
 UTM
 Vagrant
 Docker
 Minikube
 Helm
+ArgoCD
 ```
 
 ---
@@ -492,13 +585,13 @@ make format
 
 # Continuous Integration
 
-GitHub Actions runs the following on every push:
+GitHub Actions runs the following on every push to `src/**`:
 
-* build
-* lint checks
-* formatting validation
-* unit tests
-* Docker image build and push
+* Build
+* Lint checks
+* Formatting validation
+* Unit tests
+* Docker image build and push to DockerHub
 
 ---
 
@@ -544,6 +637,12 @@ infra
     postgres/          → custom chart for PostgreSQL
     vault/             → Hashicorp Vault chart
     external-secrets/  → External Secrets Operator chart
+    argocd/            → ArgoCD chart
+  argocd/              → ArgoCD declarative configuration
+    repository-secret.yaml
+    applications/
+      student-api.yaml
+      postgres.yaml
 
 scripts          → developer setup scripts
 postman          → API testing collection

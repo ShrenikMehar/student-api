@@ -1,5 +1,5 @@
 .PHONY: build run stop logs db-up db-down local-build local-run local-test lint format \
-        k8s-up k8s-run k8s-stop k8s-start k8s-down
+        k8s-up k8s-run k8s-argocd-password k8s-argocd-ui k8s-stop k8s-start k8s-down
 
 -include .env
 export
@@ -84,9 +84,21 @@ k8s-up:
 		--set secret.dbUser=$(DB_USER) \
 		--set secret.dbPassword=$(DB_PASSWORD) \
 		--set vaultToken=$(VAULT_TOKEN)
+	kubectl create namespace argocd
+	helm install argocd infra/helm/argocd --namespace argocd
+	kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=argocd-server -n argocd --timeout=300s
+	envsubst < infra/argocd/repository-secret.yaml | kubectl apply -f -
+	kubectl apply -f infra/argocd/applications/postgres.yaml
+	kubectl apply -f infra/argocd/applications/student-api.yaml
 
 k8s-run:
 	minikube service student-api -n student-api --url
+
+k8s-argocd-password:
+	@kubectl get secret argocd-initial-admin-secret -n argocd -o jsonpath="{.data.password}" | base64 -d && echo
+
+k8s-argocd-ui:
+	minikube service argocd-server -n argocd --url
 
 k8s-stop:
 	minikube stop
