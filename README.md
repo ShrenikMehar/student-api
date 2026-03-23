@@ -428,6 +428,16 @@ Required secrets:
 | GITHUB_USERNAME | GitHub username for ArgoCD repo access |
 | GITHUB_TOKEN | GitHub Personal Access Token with repo scope |
 
+### GitHub Actions Permissions
+
+Enable write permissions for GitHub Actions:
+
+```
+GitHub repo → Settings → Actions → General → Workflow permissions → Read and write permissions → Save
+```
+
+This is required for the CI pipeline to commit the updated image tag back to the repository.
+
 ### Environment File
 
 Copy `.env.example` to `.env` and fill in the values:
@@ -591,7 +601,9 @@ GitHub Actions runs the following on every push to `src/**`:
 * Lint checks
 * Formatting validation
 * Unit tests
-* Docker image build and push to DockerHub
+* Docker image build and push to DockerHub using Git commit SHA as image tag
+* Update image tag in `infra/helm/student-api/values.yaml` and commit back to Git
+* ArgoCD detects the updated tag in Git and automatically deploys the new version to the cluster
 
 ---
 
@@ -647,3 +659,11 @@ infra
 scripts          → developer setup scripts
 postman          → API testing collection
 ```
+
+---
+
+# Future Improvements
+
+* Dockerfile optimisations to reduce build time
+* Think of Multiple environment support
+* Monitoring and observability stack
