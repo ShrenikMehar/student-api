@@ -2,7 +2,7 @@ replicaCount: 1
 
 image:
   repository: shrenikmehar/student-api
-  tag: "1.0.0"
+  tag: "35549fa8b8cff697d5e976d97525e9aa545a488e"
   pullPolicy: IfNotPresent
 
 service:
