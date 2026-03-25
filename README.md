@@ -17,6 +17,7 @@ The service is built using **Kotlin** and the **Micronaut** framework and follow
 * Helm charts for deployment management
 * Secrets management using Vault and External Secrets Operator
 * GitOps-based deployments using ArgoCD
+* Observability stack with Prometheus, Loki, Grafana, and Promtail
 
 Student data is stored in **PostgreSQL**.
 
@@ -74,6 +75,11 @@ The API supports:
 * **Deployment Management:** Helm
 * **Secrets Management:** Hashicorp Vault + External Secrets Operator
 * **GitOps:** ArgoCD
+* **Metrics:** Prometheus + kube-state-metrics + node-exporter
+* **Logs:** Loki + Promtail
+* **Visualization:** Grafana
+* **Endpoint Monitoring:** Blackbox Exporter
+* **DB Monitoring:** Postgres Exporter
 
 ---
 
@@ -365,9 +371,9 @@ vagrant destroy
 
 ---
 
-# Deployment Using Kubernetes, Helm and ArgoCD
+# Deployment Using Kubernetes, Helm, ArgoCD and Observability
 
-The project can be deployed on a local Kubernetes cluster using Minikube, Helm, and ArgoCD.
+The project can be deployed on a local Kubernetes cluster using Minikube, Helm, and ArgoCD, with a full observability stack.
 
 ## Architecture
 
@@ -383,11 +389,18 @@ Student API pods (minikube-m02)
    ▼
 PostgreSQL pod (minikube-m03)
 
-Vault + ESO + ArgoCD (minikube-m04)
+Vault + ESO + ArgoCD + Observability (minikube-m04)
    │
    ├── Vault → stores DB credentials
    ├── ESO → injects credentials as K8s Secrets
-   └── ArgoCD → watches Git and syncs deployments
+   ├── ArgoCD → watches Git and syncs deployments
+   └── Observability
+       ├── Prometheus → scrapes metrics from all services
+       ├── Grafana → visualizes metrics and logs
+       ├── Loki → stores logs
+       ├── Promtail → ships student-api logs to Loki
+       ├── Postgres Exporter → exposes DB metrics to Prometheus
+       └── Blackbox Exporter → monitors endpoint health
 ```
 
 ## Infrastructure Layout
@@ -399,12 +412,18 @@ infra/
  │   ├── postgres/          → custom chart for PostgreSQL
  │   ├── vault/             → Hashicorp Vault chart
  │   ├── external-secrets/  → External Secrets Operator chart
- │   └── argocd/            → ArgoCD chart
+ │   ├── argocd/            → ArgoCD chart
+ │   └── observability/     → observability stack values files
+ │       ├── prometheus-values.yaml
+ │       ├── loki-values.yaml
+ │       ├── promtail-values.yaml
+ │       ├── postgres-exporter-values.yaml
+ │       └── blackbox-exporter-values.yaml
  └── argocd/
-     ├── repository-secret.yaml  → GitHub repo access for ArgoCD
+     ├── repository-secret.yaml
      └── applications/
-         ├── student-api.yaml    → ArgoCD app for student API
-         └── postgres.yaml       → ArgoCD app for PostgreSQL
+         ├── student-api.yaml
+         └── postgres.yaml
 ```
 
 ---
@@ -472,7 +491,7 @@ This will:
 * Start Minikube with 4 nodes
 * Label nodes by role (application, database, dependent_services)
 * Add required Helm repositories
-* Deploy Vault, ESO, PostgreSQL, Student API, and ArgoCD
+* Deploy Vault, ESO, PostgreSQL, Student API, ArgoCD, and full observability stack
 * Store DB credentials in Vault
 * Apply ArgoCD repository secret and application manifests
 * ArgoCD will automatically sync and manage deployments
@@ -514,7 +533,45 @@ username: admin
 password: <output from above command>
 ```
 
-Keep the terminal running `k8s-argocd-ui` open and open the URL in your browser.
+---
+
+## Access Grafana
+
+Get the Grafana UI URL:
+
+```
+make k8s-grafana-ui
+```
+
+Login credentials:
+
+```
+username: admin
+password: admin
+```
+
+Grafana comes pre-configured with:
+
+* Prometheus data source — for metrics
+* Loki data source — for logs (add manually via Connections → Data sources → Add → Loki → URL: http://loki-gateway.observability.svc.cluster.local)
+* Default Kubernetes dashboards
+
+### Useful Grafana queries
+
+View student-api logs in Explore with Loki:
+```
+{job="student-api"}
+```
+
+View endpoint health in Explore with Prometheus:
+```
+probe_success
+```
+
+View Postgres metrics in Explore with Prometheus:
+```
+pg_up
+```
 
 ---
 
@@ -537,6 +594,7 @@ After resuming, re-expose the services by running:
 ```
 make k8s-run
 make k8s-argocd-ui
+make k8s-grafana-ui
 ```
 
 ---
@@ -565,6 +623,7 @@ Docker
 Minikube
 Helm
 ArgoCD
+Prometheus + Grafana + Loki
 ```
 
 ---
@@ -644,12 +703,13 @@ infra
   docker-compose.yml   → local Docker setup
   provision.sh         → Vagrant VM provisioning
   nginx/               → Nginx load balancer config
-  helm/                → Helm charts for Kubernetes deployment
+  helm/                → Helm charts and values for Kubernetes deployment
     student-api/       → custom chart for the API
     postgres/          → custom chart for PostgreSQL
     vault/             → Hashicorp Vault chart
     external-secrets/  → External Secrets Operator chart
     argocd/            → ArgoCD chart
+    observability/     → observability stack values files
   argocd/              → ArgoCD declarative configuration
     repository-secret.yaml
     applications/
@@ -666,4 +726,3 @@ postman          → API testing collection
 
 * Dockerfile optimisations to reduce build time
 * Think of Multiple environment support
-* Monitoring and observability stack
