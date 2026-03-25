@@ -1,0 +1,13 @@
+config:
+  datasource:
+    host: postgres.student-api.svc.cluster.local
+    user: postgres
+    password: postgres
+    database: students
+    sslmode: disable
+
+serviceMonitor:
+  enabled: true
+  namespace: observability
+  labels:
+    release: prometheus

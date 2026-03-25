@@ -103,6 +103,9 @@ k8s-up:
 	helm install promtail grafana/promtail \
 		--namespace observability \
 		-f infra/helm/observability/promtail-values.yaml
+	helm install postgres-exporter prometheus-community/prometheus-postgres-exporter \
+		--namespace observability \
+		-f infra/helm/observability/postgres-exporter-values.yaml
 
 k8s-run:
 	minikube service student-api -n student-api --url
