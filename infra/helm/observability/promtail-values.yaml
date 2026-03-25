@@ -1,0 +1,52 @@
+daemonset:
+  enabled: true
+
+serviceAccount:
+  create: true
+
+rbac:
+  create: true
+  pspEnabled: false
+
+volumes:
+  - name: pods-logs
+    hostPath:
+      path: /var/log/pods
+
+volumeMounts:
+  - name: pods-logs
+    mountPath: /var/log/pods
+    readOnly: true
+
+containerSecurityContext:
+  readOnlyRootFilesystem: false
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+    add:
+      - DAC_READ_SEARCH
+
+config:
+  clients:
+    - url: http://loki-gateway.observability.svc.cluster.local/loki/api/v1/push
+  snippets:
+    scrapeConfigs: |
+      - job_name: student-api-logs
+        static_configs:
+          - targets:
+              - localhost
+            labels:
+              job: student-api
+              __path__: /var/log/pods/student-api_student-api-*/*/*.log
+
+initContainer:
+  - name: init
+    image: busybox
+    imagePullPolicy: IfNotPresent
+    command:
+      - sh
+      - -c
+      - sysctl -w fs.inotify.max_user_instances=512
+    securityContext:
+      privileged: true

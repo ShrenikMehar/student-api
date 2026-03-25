@@ -100,6 +100,9 @@ k8s-up:
 	helm install loki grafana/loki \
 		--namespace observability \
 		-f infra/helm/observability/loki-values.yaml
+	helm install promtail grafana/promtail \
+		--namespace observability \
+		-f infra/helm/observability/promtail-values.yaml
 
 k8s-run:
 	minikube service student-api -n student-api --url
