@@ -106,6 +106,9 @@ k8s-up:
 	helm install postgres-exporter prometheus-community/prometheus-postgres-exporter \
 		--namespace observability \
 		-f infra/helm/observability/postgres-exporter-values.yaml
+	helm install blackbox-exporter prometheus-community/prometheus-blackbox-exporter \
+		--namespace observability \
+		-f infra/helm/observability/blackbox-exporter-values.yaml
 
 k8s-run:
 	minikube service student-api -n student-api --url

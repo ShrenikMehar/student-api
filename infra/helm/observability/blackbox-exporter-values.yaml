@@ -1,0 +1,25 @@
+config:
+  modules:
+    http_2xx:
+      prober: http
+      timeout: 5s
+      http:
+        valid_http_versions: ["HTTP/1.1", "HTTP/2.0"]
+        follow_redirects: true
+        preferred_ip_protocol: "ip4"
+
+serviceMonitor:
+  enabled: true
+  defaults:
+    labels:
+      release: prometheus
+    interval: 30s
+    scrapeTimeout: 30s
+    module: http_2xx
+  targets:
+    - name: student-api
+      url: http://student-api.student-api.svc.cluster.local:8080/healthcheck
+    - name: vault
+      url: http://vault.vault.svc.cluster.local:8200/v1/sys/health
+    - name: argocd
+      url: http://argocd-server.argocd.svc.cluster.local:80
