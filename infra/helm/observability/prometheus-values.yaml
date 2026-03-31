@@ -13,6 +13,41 @@ grafana:
     type: NodePort
     nodePort: 30082
   adminPassword: admin
+  additionalDataSources:
+    - name: Loki
+      type: loki
+      url: http://loki-gateway.observability.svc.cluster.local
+      access: proxy
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+        - name: default
+          orgId: 1
+          folder: ""
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/default
+  dashboards:
+    default:
+      node-exporter:
+        gnetId: 1860
+        revision: 37
+        datasource: Prometheus
+      kube-state-metrics:
+        gnetId: 13332
+        revision: 12
+        datasource: Prometheus
+      postgres:
+        gnetId: 9628
+        revision: 7
+        datasource: Prometheus
+      blackbox:
+        gnetId: 7587
+        revision: 3
+        datasource: Prometheus
 
 alertmanager:
   enabled: false
