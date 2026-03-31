@@ -1,0 +1,104 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: student-api-alerts
+  namespace: observability
+  labels:
+    release: prometheus
+spec:
+  groups:
+    - name: node-alerts
+      rules:
+        - alert: HighCPUUsage
+          expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High CPU usage on {{ $labels.instance }}"
+            description: "CPU usage is above 80% for more than 5 minutes. Current value: {{ $value }}%"
+
+        - alert: HighDiskUsage
+          expr: (1 - node_filesystem_avail_bytes{fstype!="tmpfs"} / node_filesystem_size_bytes{fstype!="tmpfs"}) * 100 > 80
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High disk usage on {{ $labels.instance }}"
+            description: "Disk usage is above 80% on {{ $labels.mountpoint }}. Current value: {{ $value }}%"
+
+    - name: application-alerts
+      rules:
+        - alert: HighErrorRate
+          expr: sum(rate(http_server_requests_seconds_count{status=~"5.."}[10m])) > 0.1
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: "High error rate in student-api"
+            description: "5xx error rate is above 0.1 req/s in the last 10 minutes. Current value: {{ $value }}"
+
+        - alert: HighRequestCount
+          expr: sum(rate(http_server_requests_seconds_count{app="student-api"}[5m])) > 100
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High request count on student-api"
+            description: "Request rate is above 100 req/s. Current value: {{ $value }}"
+
+        - alert: HighP90Latency
+          expr: histogram_quantile(0.90, sum(rate(http_server_requests_seconds_bucket{app="student-api"}[5m])) by (le)) > 1
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High p90 latency on student-api"
+            description: "p90 latency is above 1s. Current value: {{ $value }}s"
+
+        - alert: HighP95Latency
+          expr: histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{app="student-api"}[5m])) by (le)) > 2
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High p95 latency on student-api"
+            description: "p95 latency is above 2s. Current value: {{ $value }}s"
+
+        - alert: HighP99Latency
+          expr: histogram_quantile(0.99, sum(rate(http_server_requests_seconds_bucket{app="student-api"}[5m])) by (le)) > 5
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "High p99 latency on student-api"
+            description: "p99 latency is above 5s. Current value: {{ $value }}s"
+
+    - name: service-restart-alerts
+      rules:
+        - alert: PostgresRestarted
+          expr: kube_pod_container_status_restarts_total{namespace="student-api", container="postgres"} > 0
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Postgres pod restarted"
+            description: "Postgres container has restarted {{ $value }} times"
+
+        - alert: VaultRestarted
+          expr: kube_pod_container_status_restarts_total{namespace="vault", container="vault"} > 0
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Vault pod restarted"
+            description: "Vault container has restarted {{ $value }} times"
+
+        - alert: ArgoCDRestarted
+          expr: kube_pod_container_status_restarts_total{namespace="argocd", container="argocd-server"} > 0
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: "ArgoCD server pod restarted"
+            description: "ArgoCD server container has restarted {{ $value }} times"
