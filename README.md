@@ -489,16 +489,31 @@ GITHUB_TOKEN=your_github_pat
 source .env && make k8s-up
 ```
 
-This will:
+This is the full bootstrap command. It is safe to rerun: existing cluster components such as node labels, namespaces, Helm repos, and Vault seed data are checked and skipped when already present, while Helm releases are reconciled with `helm upgrade --install`.
 
-* Start Minikube with 4 nodes
-* Label nodes by role (application, database, dependent_services)
-* Add required Helm repositories
-* Deploy Vault, ESO, PostgreSQL, Student API, ArgoCD, and full observability stack
-* Store DB credentials in Vault
-* Apply ArgoCD repository secret and application manifests
-* Apply Prometheus alert rules
-* ArgoCD will automatically sync and manage deployments
+`make k8s-up` performs the following stages in order:
+
+* Start Minikube with 4 nodes if it is not already running
+* Label worker nodes by role (`application`, `database`, `dependent_services`)
+* Create namespaces if missing
+* Configure required Helm repositories
+* Deploy Vault and External Secrets Operator
+* Seed DB credentials into Vault if they are not already present
+* Deploy PostgreSQL and Student API
+* Deploy ArgoCD and apply its repository/application manifests
+* Deploy the observability stack and alert rules
+
+You can also run individual stages when needed:
+
+```
+source .env && make k8s-cluster
+source .env && make k8s-core
+source .env && make k8s-apps
+source .env && make k8s-gitops
+source .env && make k8s-observability
+```
+
+These commands are thin wrappers around `scripts/k8s.sh`, which contains the deployment sequencing and idempotency checks.
 
 ---
 
@@ -753,6 +768,7 @@ infra
       postgres.yaml
 
 scripts          → developer setup scripts
+  k8s.sh         → staged Kubernetes bootstrap script
 postman          → API testing collection
 ```
 
