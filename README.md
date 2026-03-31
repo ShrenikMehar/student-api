@@ -18,6 +18,7 @@ The service is built using **Kotlin** and the **Micronaut** framework and follow
 * Secrets management using Vault and External Secrets Operator
 * GitOps-based deployments using ArgoCD
 * Observability stack with Prometheus, Loki, Grafana, and Promtail
+* Grafana dashboards and Prometheus alert rules
 
 Student data is stored in **PostgreSQL**.
 
@@ -413,12 +414,14 @@ infra/
  │   ├── vault/             → Hashicorp Vault chart
  │   ├── external-secrets/  → External Secrets Operator chart
  │   ├── argocd/            → ArgoCD chart
- │   └── observability/     → observability stack values files
+ │   └── observability/     → observability stack values and configs
  │       ├── prometheus-values.yaml
  │       ├── loki-values.yaml
  │       ├── promtail-values.yaml
  │       ├── postgres-exporter-values.yaml
- │       └── blackbox-exporter-values.yaml
+ │       ├── blackbox-exporter-values.yaml
+ │       └── alerts/
+ │           └── alert-rules.yaml
  └── argocd/
      ├── repository-secret.yaml
      └── applications/
@@ -494,6 +497,7 @@ This will:
 * Deploy Vault, ESO, PostgreSQL, Student API, ArgoCD, and full observability stack
 * Store DB credentials in Vault
 * Apply ArgoCD repository secret and application manifests
+* Apply Prometheus alert rules
 * ArgoCD will automatically sync and manage deployments
 
 ---
@@ -550,28 +554,60 @@ username: admin
 password: admin
 ```
 
-Grafana comes pre-configured with:
+### Pre-configured dashboards
 
-* Prometheus data source — for metrics
-* Loki data source — for logs (add manually via Connections → Data sources → Add → Loki → URL: http://loki-gateway.observability.svc.cluster.local)
-* Default Kubernetes dashboards
+Grafana comes with the following dashboards pre-loaded:
+
+* **Node Exporter Full** — CPU, memory, disk and network per node
+* **Kubernetes Cluster Overview** — pod restarts, deployments, resource usage
+* **PostgreSQL Database** — connections, query stats, cache hit ratio
+* **Blackbox Exporter** — endpoint uptime and response time for student-api, Vault, ArgoCD
+
+### Pre-configured data sources
+
+* **Prometheus** — for metrics
+* **Loki** — for logs
 
 ### Useful Grafana queries
 
 View student-api logs in Explore with Loki:
+
 ```
 {job="student-api"}
 ```
 
 View endpoint health in Explore with Prometheus:
+
 ```
 probe_success
 ```
 
-View Postgres metrics in Explore with Prometheus:
+View Postgres up status in Explore with Prometheus:
+
 ```
 pg_up
 ```
+
+---
+
+## Alert Rules
+
+The following Prometheus alert rules are configured:
+
+| Alert | Condition | Severity |
+| ----- | --------- | -------- |
+| HighCPUUsage | CPU > 80% for 5 min | warning |
+| HighDiskUsage | Disk > 80% for 5 min | warning |
+| HighErrorRate | 5xx errors > 0.1 req/s for 1 min | critical |
+| HighRequestCount | Request rate > 100 req/s for 5 min | warning |
+| HighP90Latency | p90 latency > 1s for 5 min | warning |
+| HighP95Latency | p95 latency > 2s for 5 min | warning |
+| HighP99Latency | p99 latency > 5s for 5 min | critical |
+| PostgresRestarted | Postgres container restart count > 0 | critical |
+| VaultRestarted | Vault container restart count > 0 | critical |
+| ArgoCDRestarted | ArgoCD server restart count > 0 | critical |
+
+View active alerts in Grafana → Alerting → Alert rules.
 
 ---
 
@@ -709,7 +745,7 @@ infra
     vault/             → Hashicorp Vault chart
     external-secrets/  → External Secrets Operator chart
     argocd/            → ArgoCD chart
-    observability/     → observability stack values files
+    observability/     → observability stack values files and alert rules
   argocd/              → ArgoCD declarative configuration
     repository-secret.yaml
     applications/

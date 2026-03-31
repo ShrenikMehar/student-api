@@ -109,6 +109,7 @@ k8s-up:
 	helm install blackbox-exporter prometheus-community/prometheus-blackbox-exporter \
 		--namespace observability \
 		-f infra/helm/observability/blackbox-exporter-values.yaml
+	kubectl apply -f infra/helm/observability/alerts/alert-rules.yaml
 
 k8s-run:
 	minikube service student-api -n student-api --url
