@@ -1,0 +1,9 @@
+server:
+  dev:
+    enabled: true
+    devRootToken: "root"
+  nodeSelector:
+    type: dependent_services
+
+injector:
+  enabled: false

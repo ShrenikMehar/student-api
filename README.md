@@ -742,9 +742,9 @@ infra
   helm/                → Helm charts and values for Kubernetes deployment
     student-api/       → custom chart for the API
     postgres/          → custom chart for PostgreSQL
-    vault/             → Hashicorp Vault chart
-    external-secrets/  → External Secrets Operator chart
-    argocd/            → ArgoCD chart
+    vault-values.yaml  → Hashicorp Vault values
+    external-secrets-values.yaml  → External Secrets Operator values
+    argocd-values.yaml → ArgoCD values
     observability/     → observability stack values files and alert rules
   argocd/              → ArgoCD declarative configuration
     repository-secret.yaml
