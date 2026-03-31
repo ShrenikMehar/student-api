@@ -3,12 +3,16 @@ FROM gradle:8.7-jdk21 AS builder
 
 WORKDIR /app
 
-COPY build.gradle.kts settings.gradle.kts gradle.properties ./
+COPY gradlew gradlew.bat build.gradle.kts settings.gradle.kts gradle.properties ./
 COPY gradle ./gradle
+RUN chmod +x gradlew
+
+# Warm the Gradle dependency cache before copying application sources.
+RUN ./gradlew dependencies --no-daemon >/dev/null
 
 COPY src ./src
 
-RUN gradle shadowJar -x test --no-daemon
+RUN ./gradlew shadowJar -x test --no-daemon
 
 
 # ---------- Stage 2 : Runtime ----------
