@@ -9,12 +9,6 @@ spec:
     repoURL: https://github.com/ShrenikMehar/StudentManagement
     targetRevision: main
     path: infra/helm/postgres
-    helm:
-      valuesObject:
-        auth:
-          username: postgres
-          password: postgres
-          database: students
   destination:
     server: https://kubernetes.default.svc
     namespace: student-api

@@ -108,10 +108,6 @@ StudentManagement/
 │   ├── provision.sh            # Vagrant VM provisioning script
 │   ├── nginx/
 │   │   └── nginx.conf          # Load balancer config
-│   ├── k8s/                    # Raw K8s manifests (reference only, superseded by Helm)
-│   │   └── student-api/
-│   │       ├── application.yml
-│   │       └── database.yml
 │   ├── helm/
 │   │   ├── student-api/        # Custom Helm chart
 │   │   │   ├── Chart.yaml
@@ -262,17 +258,16 @@ make k8s-grafana-ui                 # Get Grafana URL
 - **Flyway runs in app on startup** — exercise required init container for migrations, not implemented
 - **No PersistentVolumeClaim** for Postgres — data lost on pod restart
 - **Vault dev mode** — data wiped on every cluster teardown, credentials must be re-seeded
-- **Image tag hardcoded in ArgoCD Application manifests** — values come from values.yaml but ArgoCD app has `valuesObject` override that may conflict
+- **Bootstrap defaults are split across `.env`, Helm values, and scripts** — local Minikube defaults work, but config is still spread across multiple places
 - **No integration tests** — only unit tests with mocked repos, no Testcontainers
 - **No request validation tests** — validation annotations on DTOs not tested
 - **No verify() calls in controller tests** — only response assertions, not service call verification
 - **DB_PORT in ConfigMap** — should be quoted string, caused issues
 - **k8s-up is not idempotent** — fails if cluster already running (minikube start fails, namespace already exists, etc.)
-- **Promtail uses static_configs** not kubernetes_sd_configs — limitation on Minikube but not scalable
+- **Promtail uses static_configs** not kubernetes_sd_configs — acceptable for this Minikube setup but not scalable
 - **Loki chunks-cache pending** — known issue with Loki on Minikube, non-critical
 - **Application error logs dashboard** — skipped (Loki LogQL not compatible with PrometheusRule)
 - **Slack alerts** — skipped from Exercise 11
-- **infra/k8s/ raw manifests** — kept as reference but now superseded by Helm, creates confusion
 - **No Hadolint** — Dockerfile not linted (mentioned in Exercise 2 further reading)
 - **CI doesn't trigger on infra changes** — only `src/**` triggers pipeline
 
@@ -308,7 +303,7 @@ make k8s-grafana-ui                 # Get Grafana URL
 
 ### Exercise 7 — K8s Deployment ⚠️
 **Required:** K8s manifests, single file per component, init container for migrations, ConfigMaps, ESO + Vault, expose API
-**Built:** Manifests exist in infra/k8s/ but superseded by Helm. ESO + Vault working. Init container NOT implemented.
+**Built:** Helm-based deployment with ESO + Vault working. Init container NOT implemented.
 **Gap:** Init container for migrations missing.
 
 ### Exercise 8 — Helm Charts ✅
@@ -334,10 +329,9 @@ make k8s-grafana-ui                 # Get Grafana URL
 
 ### High Priority
 1. **Make k8s-up idempotent** — add checks before each step (minikube already running? namespace exists? helm release exists?)
-2. **Remove infra/k8s/ raw manifests** — confusing alongside Helm charts, keep as reference in a separate branch or docs
-3. **Add PersistentVolumeClaim to postgres Helm chart** — data survives pod restarts
-4. **Fix Vault dev mode seeding** — add a make target or script that checks if credentials exist before seeding
-5. **Add image tag to ArgoCD Application valuesObject** — current setup may have conflict between values.yaml and valuesObject
+2. **Add PersistentVolumeClaim to postgres Helm chart** — data survives pod restarts
+3. **Fix Vault dev mode seeding** — add a make target or script that checks if credentials exist before seeding
+4. **Centralize bootstrap configuration further** — reduce duplication across `.env`, chart values, and scripts
 
 ### Medium Priority
 6. **Add integration tests with Testcontainers** — test actual DB operations

@@ -11,6 +11,12 @@ EXTERNAL_SECRETS_NAMESPACE="${EXTERNAL_SECRETS_NAMESPACE:-external-secrets}"
 APP_NAMESPACE="${APP_NAMESPACE:-student-api}"
 ARGOCD_NAMESPACE="${ARGOCD_NAMESPACE:-argocd}"
 OBSERVABILITY_NAMESPACE="${OBSERVABILITY_NAMESPACE:-observability}"
+DB_HOST="${DB_HOST:-postgres}"
+DB_PORT="${DB_PORT:-5432}"
+DB_NAME="${DB_NAME:-students}"
+DB_USER="${DB_USER:-postgres}"
+DB_PASSWORD="${DB_PASSWORD:-postgres}"
+VAULT_TOKEN="${VAULT_TOKEN:-root}"
 
 require_env() {
   local name="$1"
@@ -121,10 +127,6 @@ seed_vault_secret() {
 }
 
 deploy_core() {
-  require_env VAULT_TOKEN
-  require_env DB_USER
-  require_env DB_PASSWORD
-
   ensure_namespaces
   ensure_helm_repos
 
@@ -144,34 +146,21 @@ deploy_core() {
 }
 
 deploy_apps() {
-  require_env DB_HOST
-  require_env DB_PORT
-  require_env DB_NAME
-  require_env DB_USER
-  require_env DB_PASSWORD
-  require_env VAULT_TOKEN
-
   deploy_core
 
   log "Deploying Postgres"
   helm upgrade --install postgres "$ROOT_DIR/infra/helm/postgres" \
-    --namespace "$APP_NAMESPACE" \
-    --set auth.username="$DB_USER" \
-    --set auth.password="$DB_PASSWORD" \
-    --set auth.database="$DB_NAME"
+    --namespace "$APP_NAMESPACE"
 
   log "Deploying student-api"
   helm upgrade --install student-api "$ROOT_DIR/infra/helm/student-api" \
-    --namespace "$APP_NAMESPACE" \
-    --set config.dbHost="$DB_HOST" \
-    --set config.dbPort="$DB_PORT" \
-    --set config.dbName="$DB_NAME" \
-    --set secret.dbUser="$DB_USER" \
-    --set secret.dbPassword="$DB_PASSWORD" \
-    --set vaultToken="$VAULT_TOKEN"
+    --namespace "$APP_NAMESPACE"
 }
 
 deploy_gitops() {
+  require_env GITHUB_USERNAME
+  require_env GITHUB_TOKEN
+
   ensure_namespaces
   ensure_helm_repos
 

@@ -1,3 +1,7 @@
+# Minikube-specific Promtail setup.
+# This uses static log paths instead of kubernetes_sd_configs because the local cluster
+# layout is predictable and simpler to operate here. Consider replacing this with
+# Grafana Alloy or a Kubernetes service-discovery-based approach later.
 daemonset:
   enabled: true
 
