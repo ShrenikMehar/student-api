@@ -38,6 +38,12 @@ spec:
                   name: {{ .Release.Name }}-config
                   key: DB_NAME
             - name: DB_USER
-              value: {{ .Values.secret.dbUser }}
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: username
             - name: DB_PASSWORD
-              value: {{ .Values.secret.dbPassword }}
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: password

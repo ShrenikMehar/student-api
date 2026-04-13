@@ -114,6 +114,14 @@ wait_for_eso_crds() {
   kubectl wait --for=condition=established crd/secretstores.external-secrets.io --timeout=300s
 }
 
+wait_for_external_secret_sync() {
+  log "Waiting for ExternalSecret to sync postgres-secret"
+  kubectl wait externalsecret/student-api-db-secret \
+    -n "$APP_NAMESPACE" \
+    --for=condition=Ready \
+    --timeout=300s
+}
+
 seed_vault_secret() {
   log "Checking Vault seed data"
   if kubectl exec vault-0 -n "$VAULT_NAMESPACE" -- vault kv get secret/student-api/db >/dev/null 2>&1; then
@@ -155,6 +163,7 @@ deploy_apps() {
   log "Deploying student-api"
   helm upgrade --install student-api "$ROOT_DIR/infra/helm/student-api" \
     --namespace "$APP_NAMESPACE"
+  wait_for_external_secret_sync
 }
 
 deploy_gitops() {

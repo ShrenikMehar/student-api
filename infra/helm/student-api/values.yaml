@@ -18,8 +18,4 @@ config:
   dbPort: "5432"
   dbName: "students"
 
-secret:
-  dbUser: "postgres"
-  dbPassword: "postgres"
-
 vaultToken: "root"
