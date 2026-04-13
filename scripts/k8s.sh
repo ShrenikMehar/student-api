@@ -217,7 +217,7 @@ deploy_cluster() {
 
 deploy_all() {
   deploy_cluster
-  deploy_apps
+  deploy_core
   deploy_gitops
   deploy_observability
   log "Kubernetes bootstrap complete. Run 'make k8s-run' to get the API URL."
