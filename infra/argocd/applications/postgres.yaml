@@ -6,7 +6,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/ShrenikMehar/StudentManagement
+    repoURL: https://github.com/ShrenikMehar/student-api
     targetRevision: main
     path: infra/helm/postgres
   destination:
