@@ -23,20 +23,11 @@ spec:
             - containerPort: {{ .Values.service.port }}
           env:
             - name: DB_HOST
-              valueFrom:
-                configMapKeyRef:
-                  name: {{ .Release.Name }}-config
-                  key: DB_HOST
+              value: {{ .Values.config.dbHost }}
             - name: DB_PORT
-              valueFrom:
-                configMapKeyRef:
-                  name: {{ .Release.Name }}-config
-                  key: DB_PORT
+              value: {{ .Values.config.dbPort | quote }}
             - name: DB_NAME
-              valueFrom:
-                configMapKeyRef:
-                  name: {{ .Release.Name }}-config
-                  key: DB_NAME
+              value: {{ .Values.config.dbName }}
             - name: DB_USER
               valueFrom:
                 secretKeyRef:
