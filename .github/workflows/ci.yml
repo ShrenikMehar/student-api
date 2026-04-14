@@ -20,6 +20,7 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
+          cache: gradle
 
       - name: Build, Lint & Test
         run: make local-build
@@ -28,6 +29,7 @@ jobs:
     name: Publish
     runs-on: ubuntu-latest
     needs: build-test
+    if: github.ref == 'refs/heads/main'
 
     env:
       VERSION: ${{ github.sha }}
