@@ -26,14 +26,8 @@ jobs:
           distribution: temurin
           java-version: 21
 
-      - name: Build API
+      - name: Build, Lint & Test
         run: make local-build
-
-      - name: Run Lint
-        run: make lint
-
-      - name: Run Tests
-        run: make local-test
 
       - name: Build Docker Image
         run: docker build -t student-api:${VERSION} .
@@ -49,7 +43,7 @@ jobs:
 
       - name: Update image tag in values.yaml
         run: |
-          sed -i '' "s/tag: .*/tag: \"${VERSION}\"/" infra/helm/student-api/values.yaml
+          sed -i "s/tag: .*/tag: \"${VERSION}\"/" infra/helm/student-api/values.yaml
 
       - name: Commit and push updated values.yaml
         run: |
