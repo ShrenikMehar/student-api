@@ -1,5 +1,6 @@
 package org.one2n.controller
 
+import com.zaxxer.hikari.HikariDataSource
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
@@ -22,7 +23,9 @@ class HealthController(private val dataSource: Optional<DataSource>) {
     private fun checkDatabase(): String {
         if (!dataSource.isPresent) return "unavailable"
         return try {
-            dataSource.get().connection.use { conn -> if (conn.isValid(1)) "ok" else "error" }
+            dataSource.get().unwrap(HikariDataSource::class.java).connection.use { conn ->
+                if (conn.isValid(1)) "ok" else "error"
+            }
         } catch (e: java.sql.SQLException) {
             logger.warn("Database health check failed", e)
             "error"
